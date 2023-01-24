@@ -54,7 +54,6 @@ Terminated ==
     /\ \A node \in Nodes : Network[node] = 0
 
 FinishWork(node) ==
-    /\ Network[node] = 0
     /\ NodeState[node] = TRUE
     /\ NodeState' = [NodeState EXCEPT ![node] = FALSE]
     /\ UNCHANGED << Network, NodeColor, Token, TokenColor, TokenValue, SendReceiveDiff, TerminationDetected >>
@@ -81,26 +80,18 @@ PassToken(source) ==
     /\ Token # 1
     /\ IF Token = NumNodes THEN Token' = 1 ELSE Token' = Token + 1
     /\ TokenValue' = TokenValue + SendReceiveDiff[source]
-    /\ IF NodeColor[source] = "Black"
+    /\ IF NodeColor[Token'] = "Black"
         THEN TokenColor' = "Black"
         ELSE UNCHANGED TokenColor 
     /\ NodeColor' = [NodeColor EXCEPT ![source] = "White"]
     /\ UNCHANGED << NodeState, Network, SendReceiveDiff, TerminationDetected >>
 
-IsTerminated == 
-    /\ Token = 1
-    /\ TokenValue + SendReceiveDiff[1] = 0
-    /\ TokenColor = "White"
-    /\ NodeState[1] = FALSE
-    /\ NodeColor[1] = "White"    
-
 InitiateTermination ==
     /\ Token = 1
     /\ NodeState[1] = FALSE
-    /\ ~IsTerminated
-    \* /\ \/ TokenValue + SendReceiveDiff[1] # 0
-    \*    \/ TokenColor = "Black"
-    \*    \/ NodeColor[1] = "Black"
+    /\ \/ TokenValue + SendReceiveDiff[1] # 0
+       \/ TokenColor = "Black"
+       \/ NodeColor[1] = "Black"
     /\ Token' = Token + 1 \* NumNodes
     /\ TokenValue' = 0
     /\ TokenColor' = "White"
@@ -108,7 +99,11 @@ InitiateTermination ==
     /\ UNCHANGED << NodeState, SendReceiveDiff, Network, TerminationDetected >>
 
 DetectTermination ==
-    /\ IsTerminated
+    /\ Token = 1
+    /\ TokenValue + SendReceiveDiff[1] = 0
+    /\ TokenColor = "White"
+    /\ NodeState[1] = FALSE
+    /\ NodeColor[1] = "White"
     /\ TerminationDetected' = TRUE
     /\ UNCHANGED << NodeState, NodeColor, Token, TokenColor, TokenValue, SendReceiveDiff, Network >>
 
@@ -125,15 +120,38 @@ FiniteNetwork ==
     \A node \in Nodes : Network[node] <= 3
 
 FiniteMessages ==
-    \A node \in Nodes : SendReceiveDiff[node] <= 3
+    \A node \in Nodes : SendReceiveDiff[node] <= 2 
 
 Spec ==
     /\ Init
     /\ [][Next]_vars
     /\ WF_vars(Next)
+    /\ \A node \in Nodes: WF_vars(ReceiveMessage(node))
+
+
+Alias == [
+    NodeState |-> NodeState,
+    TerminationDetected |-> TerminationDetected,
+    Network |-> Network,
+    Token |-> Token,
+    TokenValue |-> TokenValue,
+    TokenColor |-> TokenColor,
+    SendReceiveDiff |-> SendReceiveDiff,
+    NodeColor |-> NodeColor,
+    InitiateTermination |-> ENABLED(InitiateTermination),
+    DetectTermination |-> ENABLED(DetectTermination),
+    SendEnabled |-> [ 
+        node \in Nodes |-> ENABLED (SendMessage(node))
+    ], 
+    ReceiveEnabled |-> [ 
+        node \in Nodes |-> ENABLED (ReceiveMessage(node))
+    ], 
+    PassEnabled |-> [ 
+        node \in Nodes |-> ENABLED (PassToken(node))
+    ] 
+]
 
 THEOREM Spec => ATD!Spec
-
 
 ATDSpec == ATD!Spec
 
