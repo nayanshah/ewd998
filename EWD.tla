@@ -126,8 +126,7 @@ Spec ==
     /\ Init
     /\ [][Next]_vars
     /\ WF_vars(Next)
-    /\ \A node \in Nodes: WF_vars(ReceiveMessage(node))
-
+    \* /\ \A node \in Nodes: WF_vars(ReceiveMessage(node))
 
 Alias == [
     NodeState |-> NodeState,
