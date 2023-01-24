@@ -80,7 +80,7 @@ PassToken(source) ==
     /\ Token # 1
     /\ IF Token = NumNodes THEN Token' = 1 ELSE Token' = Token + 1
     /\ TokenValue' = TokenValue + SendReceiveDiff[source]
-    /\ IF NodeColor[Token'] = "Black"
+    /\ IF NodeColor[source] = "Black"
         THEN TokenColor' = "Black"
         ELSE UNCHANGED TokenColor 
     /\ NodeColor' = [NodeColor EXCEPT ![source] = "White"]
